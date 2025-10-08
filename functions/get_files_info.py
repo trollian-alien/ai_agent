@@ -1,0 +1,19 @@
+import os
+
+def get_files_info(working_directory, directory="."):
+    directory_full_path = os.path.abspath(os.path.join(working_directory, directory))
+    working_directory_full_path = os.path.abspath(working_directory)
+    if os.path.isdir(directory_full_path) == False:
+        return f'Error: "{directory}" is not a directory'
+    if not directory_full_path.startswith(working_directory_full_path):
+        return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'
+    
+    try:
+        contents = [
+            f"- {x}: file_size={os.path.getsize(os.path.join(directory_full_path, x))} bytes, is_dir={os.path.isdir(os.path.join(directory_full_path, x))}"
+            for x in os.listdir(directory_full_path)
+        ]
+    except:
+        return f"Error: Failed to list {directory}-related data. Quite the serious error you got here. You really shouldn't be seeing this error, to be honest."
+    else:
+        return "\n".join(contents)
