@@ -12,8 +12,8 @@ def get_file_content(working_directory, file_path):
         with open(full_file_path, "r") as f:
             file_content = f.read(MAX_CHARS)
             is_there_more_text = len(f.read(1))
-    except:
-        return f'Error: Your file "{file_path}" is not readable. Is it written in theroxian, perhaps?'
+    except Exception as e:
+        return f'Error: {e}'
     
     if is_there_more_text:
         return file_content + f'[...File "{file_path}" truncated at {MAX_CHARS} characters]'

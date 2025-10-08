@@ -13,7 +13,7 @@ def get_files_info(working_directory, directory="."):
             f"- {x}: file_size={os.path.getsize(os.path.join(directory_full_path, x))} bytes, is_dir={os.path.isdir(os.path.join(directory_full_path, x))}"
             for x in os.listdir(directory_full_path)
         ]
-    except:
-        return f"Error: Failed to list {directory}-related data. Quite the serious error you got here. You really shouldn't be seeing this error, to be honest."
+    except Exception as e:
+        return f"Error: {e}"
     else:
         return "\n".join(contents)
