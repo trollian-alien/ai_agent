@@ -1,5 +1,5 @@
 import os
-from functions.config import MAX_CHARS
+from config import MAX_CHARS
 
 def get_file_content(working_directory, file_path):
     full_file_path = os.path.abspath(os.path.join(working_directory,file_path))
