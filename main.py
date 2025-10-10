@@ -6,6 +6,7 @@ from functions.get_files_info import schema_get_files_info
 from functions.get_files_content import schema_get_file_content
 from functions.write_file import schema_write_file
 from functions.run_python import schema_run_python_file
+from functions.call_function import call_function
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -55,15 +56,22 @@ def main():
     )
 
     usage = response.usage_metadata
+    verbose = False
     if sys.argv[-1] == "--verbose":
         print("User prompt: {user_prompt}")
         print(f"Prompt tokens: {usage.prompt_token_count}")
         print(f"Response tokens: {usage.candidates_token_count}")
+        verbose = True
     # print(f"Calling function: {response.function_calls.name}({response.function_calls.args})")
     
     if response.function_calls:
         fc = response.function_calls[0]
         print(f"Calling function: {fc.name}({fc.args})")
+        try:
+            function_call_result = call_function(fc, verbose)
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+        except Exception as e:
+            raise Exception(e)
     print(response.text)
     
     

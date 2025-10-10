@@ -6,10 +6,10 @@ from google.genai import types
 def get_files_info(working_directory, directory="."):
     directory_full_path = os.path.abspath(os.path.join(working_directory, directory))
     working_directory_full_path = os.path.abspath(working_directory)
-    if os.path.isdir(directory_full_path) == False:
-        return f'Error: "{directory}" is not a directory'
-    if not directory_full_path.startswith(working_directory_full_path+os.sep):
+    if not directory_full_path.startswith(working_directory_full_path):
         return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'
+    if not os.path.isdir(directory_full_path):
+        return f'Error: "{directory}" is not a directory'    
     
     try:
         contents = [
