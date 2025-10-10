@@ -7,6 +7,8 @@ from functions.get_files_content import schema_get_file_content
 from functions.write_file import schema_write_file
 from functions.run_python import schema_run_python_file
 from functions.call_function import call_function
+import time
+from google.genai.errors import ClientError
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -47,33 +49,58 @@ def main():
     types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
 
-    response = client.models.generate_content(
-    model='gemini-2.0-flash-001', 
-    contents=messages,
-    config=types.GenerateContentConfig(
-        tools=[available_functions], system_instruction=system_prompt
-        )
-    )
-
-    usage = response.usage_metadata
-    verbose = False
-    if sys.argv[-1] == "--verbose":
-        print("User prompt: {user_prompt}")
-        print(f"Prompt tokens: {usage.prompt_token_count}")
-        print(f"Response tokens: {usage.candidates_token_count}")
-        verbose = True
-    # print(f"Calling function: {response.function_calls.name}({response.function_calls.args})")
-    
-    if response.function_calls:
-        fc = response.function_calls[0]
-        print(f"Calling function: {fc.name}({fc.args})")
+    for _ in range(0,20):
         try:
-            function_call_result = call_function(fc, verbose)
-            print(f"-> {function_call_result.parts[0].function_response.response}")
+            try:
+                response = client.models.generate_content(
+                model='gemini-2.0-flash-001', 
+                contents=messages,
+                config=types.GenerateContentConfig(
+                    tools=[available_functions], system_instruction=system_prompt
+                    )
+                )
+            except ClientError as e:
+                # handle 429 with exponential backoff
+                if "RESOURCE_EXHAUSTED" in str(e):
+                    delay = min(30, 2 ** _)  # cap the wait
+                    time.sleep(delay)
+                    continue
+                else:
+                    raise
+
+            if response.candidates:
+                for candidate in response.candidates:
+                    if candidate and candidate.content:
+                        messages.append(candidate.content) 
+
+            usage = response.usage_metadata
+            verbose = False
+            if sys.argv[-1] == "--verbose":
+                print(f"User prompt: {user_prompt}")
+                print(f"Prompt tokens: {usage.prompt_token_count}")
+                print(f"Response tokens: {usage.candidates_token_count}")
+                verbose = True
+            # print(f"Calling function: {response.function_calls.name}({response.function_calls.args})")
+            
+            if response.function_calls:
+                fc = response.function_calls[0]
+                print(f"Calling function: {fc.name}({fc.args})")
+                
+                function_call_result = call_function(fc, verbose)
+                print(type(function_call_result))
+                tool_part = function_call_result.parts[0]  # contains function_response
+                messages.append(
+                    types.Content(role="user", parts=[tool_part])
+                )
+                print(f"-> {tool_part.function_response.response}")
+                    
+                if not response.function_calls and response.text:
+                    print("Final response:")
+                    print(response.text)
+                    break
+            print(response.text)
         except Exception as e:
-            raise Exception(e)
-    print(response.text)
-    
+                    raise Exception(e)
     
 
 
